@@ -29,7 +29,6 @@ jobs:
           TO_EMAIL: ${{ vars.DIGEST_TO_EMAIL }}
           FROM_EMAIL: ${{ vars.DIGEST_FROM_EMAIL }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GAZETTE_DATE: ${{ inputs.gazette_date }}
         run: python scripts/daily_digest.py
 

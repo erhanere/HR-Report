@@ -1,9 +1,10 @@
 # Resmi Gazete Günlük Özet
 
 Her gün saat **09:00 (Europe/Istanbul)**'da [Resmi Gazete](https://www.resmigazete.gov.tr/)'nin
-o günkü sayısını çeker, Claude ile Türkçe bir özet e-postası oluşturur ve
-[Resend](https://resend.com) üzerinden gönderir. GitHub Actions ile çalışır,
-sunucu gerektirmez.
+o günkü sayısındaki madde başlıklarını ve linklerini, kategori bazlı gruplanmış
+şekilde [Resend](https://resend.com) üzerinden e-posta olarak gönderir.
+GitHub Actions ile çalışır, sunucu gerektirmez. Özetleme/AI kullanılmaz —
+sadece başlık + link listelenir.
 
 ## Nasıl çalışır
 
@@ -13,8 +14,7 @@ sunucu gerektirmez.
    - `https://www.resmigazete.gov.tr/eskiler/YYYY/MM/YYYYMMDD.htm` adresini indirir,
    - Sayfayı kategori başlığı → madde listesi şeklinde ayrıştırır (başlık heuristiği;
      sitenin CSS sınıfları garanti olmadığı için üst-başlık + altındaki linkler mantığıyla çalışır),
-   - Ayrıştırılan ham listeyi Claude'a (Anthropic API) vererek "Öne Çıkanlar" +
-     kategori bazlı gruplu, kısa Türkçe bir HTML e-posta gövdesi oluşturtur,
+   - Kategori başlıklarına göre gruplanmış, sade bir HTML madde listesi (başlık + link) oluşturur,
    - Resend API ile e-postayı gönderir.
 3. Ayrıştırılan ham veri her çalıştırmada `gazette_items.json` adıyla workflow
    artifact'i olarak saklanır — parse mantığı bir gün beklenmedik çıktı verirse
@@ -27,7 +27,6 @@ Repo **Settings → Secrets and variables → Actions** altında aşağıdakiler
 ### Secrets
 | Ad | Açıklama |
 |---|---|
-| `ANTHROPIC_API_KEY` | Özetleri üretmek için Anthropic API anahtarı |
 | `RESEND_API_KEY` | E-posta göndermek için Resend API anahtarı |
 
 ### Variables
@@ -56,7 +55,6 @@ pip install -r requirements.txt
 export TO_EMAIL=erhane@koc.com.tr
 export FROM_EMAIL=onboarding@resend.dev
 export RESEND_API_KEY=...
-export ANTHROPIC_API_KEY=...
 python scripts/daily_digest.py
 ```
 
@@ -66,7 +64,6 @@ python scripts/daily_digest.py
   yöntemle (başlık satırları + altlarındaki linkler) çalışır; sitenin tasarımı
   değişirse ayarlama gerekebilir. `gazette_items.json` artifact'i bu durumda
   ilk kontrol noktanız olmalı.
-- Özetler madde **başlıklarına** dayanır, PDF/HTML tam metinleri indirip
-  okumaz — bu, hız ve maliyeti düşük tutar ama özetler bazen genel kalabilir.
+- İçerik yalnızca madde **başlıkları** ve linklerdir, özet/yorum üretilmez.
 - Resmi Gazete'nin yayımlanmadığı bir gün olursa (çok nadir), script bunu
   tespit edip durumu bildiren kısa bir e-posta gönderir.
