@@ -1,0 +1,42 @@
+name: Resmi Gazete Daily Digest
+
+on:
+  schedule:
+    # 09:00 Europe/Istanbul (UTC+3, no DST) = 06:00 UTC
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+    inputs:
+      gazette_date:
+        description: "Override date (YYYY-MM-DD), defaults to today"
+        required: false
+        type: string
+
+jobs:
+  send-digest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run digest
+        env:
+          TO_EMAIL: ${{ vars.DIGEST_TO_EMAIL }}
+          FROM_EMAIL: ${{ vars.DIGEST_FROM_EMAIL }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GAZETTE_DATE: ${{ inputs.gazette_date }}
+        run: python scripts/daily_digest.py
+
+      - name: Upload parsed items (debug)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gazette-items-${{ github.run_id }}
+          path: gazette_items.json
+          retention-days: 14
