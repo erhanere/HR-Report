@@ -64,21 +64,46 @@ def gazette_url_for(date: datetime) -> str:
     return f"{GAZETTE_BASE}/eskiler/{date:%Y}/{date:%m}/{date:%Y%m%d}.htm"
 
 
+FETCH_ATTEMPTS = 4
+FETCH_TIMEOUT = 45
+
+
 def fetch_page(url: str) -> requests.Response:
-    headers = {"User-Agent": USER_AGENT}
-    try:
-        return requests.get(url, headers=headers, timeout=30)
-    except requests.exceptions.SSLError:
-        # resmigazete.gov.tr is known to serve an incomplete certificate
-        # chain, which fails strict verification even though the content
-        # itself is a public, non-sensitive government publication. Retry
-        # once without verification rather than failing the whole run.
-        print(
-            f"WARNING: TLS verification failed for {url}; retrying without "
-            "certificate verification (known incomplete chain on this site).",
-            file=sys.stderr,
-        )
-        return requests.get(url, headers=headers, timeout=30, verify=False)
+    headers = {
+        "User-Agent": USER_AGENT,
+        "Accept-Language": "tr-TR,tr;q=0.9",
+    }
+    verify = True
+    last_error: Exception | None = None
+
+    for attempt in range(1, FETCH_ATTEMPTS + 1):
+        try:
+            return requests.get(
+                url, headers=headers, timeout=FETCH_TIMEOUT, verify=verify
+            )
+        except requests.exceptions.SSLError as exc:
+            # resmigazete.gov.tr is known to serve an incomplete certificate
+            # chain, which fails strict verification even though the content
+            # itself is a public, non-sensitive government publication. Fall
+            # back to not verifying instead of failing the whole run.
+            print(
+                f"WARNING: TLS verification failed for {url}; retrying "
+                "without certificate verification (known incomplete chain "
+                "on this site).",
+                file=sys.stderr,
+            )
+            verify = False
+            last_error = exc
+        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as exc:
+            print(
+                f"WARNING: attempt {attempt}/{FETCH_ATTEMPTS} to fetch {url} "
+                f"failed ({exc!r}); retrying.",
+                file=sys.stderr,
+            )
+            last_error = exc
+
+    assert last_error is not None
+    raise last_error
 
 
 def _looks_like_heading(tag) -> bool:
