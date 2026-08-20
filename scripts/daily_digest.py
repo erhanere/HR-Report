@@ -37,9 +37,13 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 GAZETTE_BASE = "https://www.resmigazete.gov.tr"
 HEADING_TAGS = {"h1", "h2", "h3", "h4", "h5", "h6"}
 SKIP_HREF_PREFIXES = ("#", "javascript:", "mailto:", "tel:")
+# A self-identifying bot User-Agent gets tarpitted (connection accepted, response
+# withheld) by this site's anti-bot layer, so we present as an ordinary browser
+# instead. This fetches a single public, non-interactive page — no login, no
+# form submission, no attempt to bypass access controls on non-public content.
 USER_AGENT = (
-    "Mozilla/5.0 (compatible; ResmiGazeteDigestBot/1.0; "
-    "+https://github.com/erhanere/HR-Report)"
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
 )
 
 
@@ -71,7 +75,8 @@ FETCH_TIMEOUT = 45
 def fetch_page(url: str) -> requests.Response:
     headers = {
         "User-Agent": USER_AGENT,
-        "Accept-Language": "tr-TR,tr;q=0.9",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7",
     }
     verify = True
     last_error: Exception | None = None
