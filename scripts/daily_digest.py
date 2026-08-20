@@ -27,7 +27,12 @@ from urllib.parse import urljoin
 from zoneinfo import ZoneInfo
 
 import requests
+import urllib3
 from bs4 import BeautifulSoup
+
+# We deliberately retry with verify=False for this one known-broken site
+# (see fetch_page); suppress the resulting per-request warning noise.
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 GAZETTE_BASE = "https://www.resmigazete.gov.tr"
 HEADING_TAGS = {"h1", "h2", "h3", "h4", "h5", "h6"}
@@ -60,7 +65,20 @@ def gazette_url_for(date: datetime) -> str:
 
 
 def fetch_page(url: str) -> requests.Response:
-    return requests.get(url, headers={"User-Agent": USER_AGENT}, timeout=30)
+    headers = {"User-Agent": USER_AGENT}
+    try:
+        return requests.get(url, headers=headers, timeout=30)
+    except requests.exceptions.SSLError:
+        # resmigazete.gov.tr is known to serve an incomplete certificate
+        # chain, which fails strict verification even though the content
+        # itself is a public, non-sensitive government publication. Retry
+        # once without verification rather than failing the whole run.
+        print(
+            f"WARNING: TLS verification failed for {url}; retrying without "
+            "certificate verification (known incomplete chain on this site).",
+            file=sys.stderr,
+        )
+        return requests.get(url, headers=headers, timeout=30, verify=False)
 
 
 def _looks_like_heading(tag) -> bool:
