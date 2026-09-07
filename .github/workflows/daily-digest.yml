@@ -1,9 +1,10 @@
 name: Resmi Gazete Daily Digest
 
 on:
-  schedule:
-    # 09:00 Europe/Istanbul (UTC+3, no DST) = 06:00 UTC
-    - cron: "0 6 * * *"
+  # Daily schedule disabled at the user's request — no more automatic emails.
+  # Uncomment to re-enable:
+  # schedule:
+  #   - cron: "0 6 * * *"  # 09:00 Europe/Istanbul (UTC+3, no DST)
   workflow_dispatch:
     inputs:
       gazette_date:
